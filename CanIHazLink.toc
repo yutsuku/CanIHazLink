@@ -1,8 +1,17 @@
 ## Interface: 30300
 ## Title: CanIHazLink
-## Version: 1.0
+## Version: 1.1
 ## Author: moh@yutsuku.net aka Evion->Asev @ Theatre of Lags'n'DCs 3.3.5a
 ## Notes: Print guild professions on request
 ## SavedVariables: CanIHazLinkDB
 
-DieselEngine.lua
+libs\module.lua
+
+CanIHazLink.lua
+
+network\core.lua
+network\version.lua
+network\sync.lua
+network\roll.lua
+
+message.lua
