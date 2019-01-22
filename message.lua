@@ -4,7 +4,7 @@ local CanIHazLink = require 'CanIHazLink'
 local roll = require 'CanIHazLink.network.roll'
 
 local engine_profession, engine_mode, engine_sender
-M.TimeOffset = 2
+M.TimeOffset = 5
 M.lastDump = 0
 M.maxResults = 5
 
@@ -14,23 +14,31 @@ end
 
 function trigger()
 	local message = arg1
-	local Sender = arg2
-	local Pattern = "^!(%a+)$"
-	local match = strmatch(message, Pattern)
-	if match == nil then return end
-	if CanIHazLink.professions[match] == nil then return end
-	
-	profession = CanIHazLink.professions[match]
+	local sender = arg2
+
+	local match = strmatch(message, "^!(%a+)$")
     
+    if match and CanIHazLink.professions[match] ~= nil then
+        trigger_roll(profession, 'GUILD', sender)
+    end
+end
+
+function trigger_roll(profession, mode, sender)
     engine_profession = profession
-    engine_mode = 'GUILD'
+    engine_mode = mode
     engine_sender = sender
     
     roll.do_roll(on_roll)
 end
 
 function on_message()
-    trigger()
+    local t = time()
+    
+    if t > (lastDump + TimeOffset) then
+        lastDump = t
+        trigger()
+    end
+    
     CanIHazLink.find_data()
 end
 
@@ -42,14 +50,10 @@ function do_message(profession, mode, sender)
 	if mode == nil then mode = 'SELF' end
     
 	if CanIHazLinkDB[profession] == nil then 
-        if t < (lastDump + TimeOffset) then return end
-        
-        lastDump = t
-        
         if sender and mode == 'WHISPER' then
             SendChatMessage(format('No data yet for %s.', profession), mode, sender)
         else
-             SendChatMessage(format('No data yet for %s.', profession), mode)
+            SendChatMessage(format('No data yet for %s.', profession), mode)
         end
         
         return
@@ -69,12 +73,8 @@ function do_message(profession, mode, sender)
 		end
 	end -- SELF
 	
-	if mode == 'GUILD' then
-		if IsInGuild() == nil then return end
-        if t < (lastDump + TimeOffset) then return end
-        
+	if mode == 'GUILD' and IsInGuild() then
         CC = 1
-		lastDump = t
 		SendChatMessage((format('Dumping %s, %d of %d record(s).', profession, maxResults, sizeof)), 'GUILD')
         
 		for name, link in pairs(CanIHazLinkDB[profession]) do
@@ -86,11 +86,8 @@ function do_message(profession, mode, sender)
 		end
 	end -- GUILD
 	
-	if ( mode == 'PM' ) then
-		if t < (lastDump + TimeOffset) then return end
-        
+	if ( mode == 'PM' ) then 
         CC = 1
-		lastDump = t
 		local msg = format('Dumping %s, %d of %d record(s).', profession, maxResults, sizeof)
 		tinsert(FilterOutgoing, msg)
 		SendChatMessage(msg, 'WHISPER', nil, sender)
